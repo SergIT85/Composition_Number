@@ -16,14 +16,15 @@ import ru.androideducation.compositionnumber.domain.usecases.GenerateQuestionsUs
 import ru.androideducation.compositionnumber.domain.usecases.GetGameSettingsUseCase
 import java.lang.RuntimeException
 
-class GameViewModel(application: Application) : AndroidViewModel(application) {
+class GameViewModel(
+    private val application: Application,
+    private val level: Level
+    ) : ViewModel() {
 
     private lateinit var gameSettings: GameSettings
-    private lateinit var level: Level
 
     private var timer: CountDownTimer? = null
 
-    private val context = application
     private val repository = GameRepositoryImpl
 
     private var countOfRightAnswers = 0
@@ -65,10 +66,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     val question: LiveData<Question>
         get() = _question
 
-    fun startGame(level: Level) {
-        getGameSettings(level)
+    init {
+        startGame()
+    }
+    fun startGame() {
+        getGameSettings()
         startTimer()
         getQuestion()
+        updateProgress()
     }
 
     fun chooseAnswer(answer: Int) {
@@ -81,7 +86,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val percent = calculatePercentOfRightAnswers()
         _percentOfRightAnswers.value = percent
         _progressAnswers.value = String.format(
-            context.resources.getString(R.string.progress_answers),
+            application.resources.getString(R.string.progress_answers),
             countOfRightAnswers,
             gameSettings.minCountOfRightAnswers
         )
@@ -95,11 +100,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun checkAnswer(answer: Int) {
         val rightAnswer = question.value?.rightAnswer()
-        if(answer == rightAnswer) {
+        if (answer == rightAnswer) {
             countOfRightAnswers++
         }
         countOfQuestions++
-
     }
 
     private fun startTimer() {
@@ -114,8 +118,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             override fun onFinish() {
                 finishGame()
             }
-
         }
+        timer?.start()
     }
 
     private fun formattedTime(millisUntilFinished: Long): String {
@@ -125,26 +129,18 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         return String.format("%02d:%02d", minutes, leftSeconds)
     }
 
-    private fun finishGame(){
-
+    private fun finishGame() {
+        _gameResult.value = GameResult(
+            enoughCount.value == true && enoughPercent.value == true,
+            countOfRightAnswers,
+            countOfQuestions,
+            gameSettings
+        )
     }
 
-
-    private fun getLevel(level: Level): Level {
-        return level
-    }
-
-    private fun getGameSettings(level: Level) {
-        this.level = level
+    private fun getGameSettings() {
         this.gameSettings = getGameSettingsUseCase(level)
         _minPercent.value = gameSettings.minPercentOfRightAnswers
-    }
-
-
-    private fun rightAnswer(question: LiveData<Question>): Int {
-        return question.value?.visibleNumber?.let {
-            question.value?.sum?.minus(it)
-        } ?: throw RuntimeException("Problem in rightAnswer formula ")
     }
 
     private fun getQuestion() {
