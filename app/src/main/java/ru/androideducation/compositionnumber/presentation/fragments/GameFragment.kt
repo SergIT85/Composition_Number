@@ -5,6 +5,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import ru.androideducation.compositionnumber.R
 import ru.androideducation.compositionnumber.databinding.FragmentGameBinding
 import ru.androideducation.compositionnumber.domain.entity.GameResult
@@ -12,6 +14,8 @@ import ru.androideducation.compositionnumber.domain.entity.GameSettings
 import ru.androideducation.compositionnumber.domain.entity.Level
 
 class GameFragment : Fragment() {
+
+    private lateinit var viewModel: GameViewModel
 
     private lateinit var level: Level
 
@@ -37,7 +41,7 @@ class GameFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
+        viewModel = ViewModelProvider(this)[GameViewModel::class.java]
         val gameSettings = GameSettings(1,1,1,1)
         val gameResult = GameResult(true,50, 10, gameSettings)
         binding.tvOption1.setOnClickListener {
@@ -52,7 +56,9 @@ class GameFragment : Fragment() {
     }
 
     private fun parsArgs() {
-        level = requireArguments().getSerializable(KEY_LEVEL) as Level
+        requireArguments().getParcelable<Level>(KEY_LEVEL)?.let {
+            level = it
+        }
     }
 
     private fun lunchResultFragment(gameResult: GameResult) {
@@ -70,7 +76,7 @@ class GameFragment : Fragment() {
 
             return GameFragment().apply {
                 arguments = Bundle().apply {
-                    putSerializable(KEY_LEVEL, level)
+                    putParcelable(KEY_LEVEL, level)
                 }
             }
         }
