@@ -1,4 +1,4 @@
-package ru.androideducation.compositionnumber.presemtation
+package ru.androideducation.compositionnumber.presentation
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
